@@ -22,6 +22,7 @@ def sample_schema() -> EnvSchema:
 
 
 def _capture(schema: EnvSchema, fmt: ExportFormat) -> str:
+    """Export *schema* to *fmt* and return the result as a string."""
     buf = io.StringIO()
     export_schema(schema, fmt, buf)
     return buf.getvalue()
@@ -51,6 +52,13 @@ def test_dotenv_template_empty_value_for_no_default(sample_schema):
     assert "DATABASE_URL=\n" in out
 
 
+def test_dotenv_template_shows_description(sample_schema):
+    """Variables with a description should have it rendered as a comment."""
+    out = _capture(sample_schema, ExportFormat.DOTENV)
+    assert "Primary DB connection string" in out
+    assert "HTTP port" in out
+
+
 # --- JSON Schema ---
 
 def test_json_schema_is_valid_json(sample_schema):
@@ -74,6 +82,13 @@ def test_json_schema_enum_for_allowed_values(sample_schema):
 def test_json_schema_url_format(sample_schema):
     doc = json.loads(_capture(sample_schema, ExportFormat.JSON_SCHEMA))
     assert doc["properties"]["DATABASE_URL"]["format"] == "uri"
+
+
+def test_json_schema_all_vars_present(sample_schema):
+    """Every variable declared in the schema must appear in JSON Schema properties."""
+    doc = json.loads(_capture(sample_schema, ExportFormat.JSON_SCHEMA))
+    for name in ("DATABASE_URL", "PORT", "DEBUG", "ENV"):
+        assert name in doc["properties"], f"{name!r} missing from JSON Schema properties"
 
 
 # --- Markdown ---
