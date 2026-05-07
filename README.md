@@ -55,6 +55,12 @@ To list all variables defined in your schema along with their rules:
 envguard audit --schema .env.schema
 ```
 
+To check for variables present in your `.env` file that are **not** defined in the schema:
+
+```bash
+envguard validate --schema .env.schema --env .env --strict
+```
+
 ---
 
 ## Why envguard?
@@ -62,6 +68,7 @@ envguard audit --schema .env.schema
 - ✅ Catch missing variables before they cause runtime failures
 - 🔍 Audit `.env` files for type mismatches and invalid values
 - ⚡ Lightweight with zero required dependencies
+- 🔒 Strict mode to flag undeclared variables in your `.env`
 - 🔧 Works seamlessly in CI/CD pipelines
 
 ---
