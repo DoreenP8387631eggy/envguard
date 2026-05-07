@@ -1,11 +1,8 @@
-"""Formats and outputs AuditReport results in various formats."""
-
-from __future__ import annotations
+"""Output formatting for audit reports."""
 
 import json
 from enum import Enum
-from typing import TextIO
-import sys
+from typing import Dict, Any
 
 from envguard.auditor import AuditReport, AuditIssue
 
@@ -13,10 +10,10 @@ from envguard.auditor import AuditReport, AuditIssue
 class OutputFormat(str, Enum):
     TEXT = "text"
     JSON = "json"
-    GITHUB = "github"  # GitHub Actions annotation format
+    GITHUB = "github"
 
 
-def _issue_to_dict(issue: AuditIssue) -> dict:
+def _issue_to_dict(issue: AuditIssue) -> Dict[str, Any]:
     return {
         "level": issue.level,
         "variable": issue.variable,
@@ -27,53 +24,52 @@ def _issue_to_dict(issue: AuditIssue) -> dict:
 def format_text(report: AuditReport) -> str:
     lines = []
     if report.passed:
-        lines.append("✅  envguard: all checks passed.")
+        lines.append("envguard: PASSED — no issues found.")
         return "\n".join(lines)
 
-    lines.append("❌  envguard audit failed:\n")
-    if report.errors():
-        lines.append("  ERRORS:")
-        for issue in report.errors():
-            lines.append(f"    [{issue.variable}] {issue.message}")
-    if report.warnings():
-        lines.append("  WARNINGS:")
-        for issue in report.warnings():
-            lines.append(f"    [{issue.variable}] {issue.message}")
-    lines.append(f"\n  {len(report.errors())} error(s), {len(report.warnings())} warning(s).")
+    lines.append("envguard audit report")
+    lines.append("=" * 40)
+
+    if report.errors:
+        lines.append(f"ERRORS ({len(report.errors)}):")
+        for issue in report.errors:
+            lines.append(f"  [ERROR] {issue.variable}: {issue.message}")
+
+    if report.warnings:
+        lines.append(f"WARNINGS ({len(report.warnings)}):")
+        for issue in report.warnings:
+            lines.append(f"  [WARN]  {issue.variable}: {issue.message}")
+
+    lines.append("=" * 40)
+    status = "FAILED" if report.errors else "PASSED with warnings"
+    lines.append(f"Result: {status}")
     return "\n".join(lines)
 
 
 def format_json(report: AuditReport) -> str:
-    data = {
+    data: Dict[str, Any] = {
         "passed": report.passed,
-        "error_count": len(report.errors()),
-        "warning_count": len(report.warnings()),
-        "issues": [_issue_to_dict(i) for i in report.issues],
+        "errors": [_issue_to_dict(i) for i in report.errors],
+        "warnings": [_issue_to_dict(i) for i in report.warnings],
     }
     return json.dumps(data, indent=2)
 
 
 def format_github(report: AuditReport) -> str:
+    """Emit GitHub Actions workflow command annotations."""
     lines = []
-    for issue in report.errors():
+    for issue in report.errors:
         lines.append(f"::error title=envguard [{issue.variable}]::{issue.message}")
-    for issue in report.warnings():
+    for issue in report.warnings:
         lines.append(f"::warning title=envguard [{issue.variable}]::{issue.message}")
     if not lines:
-        lines.append("::notice title=envguard::All checks passed.")
+        lines.append("::notice title=envguard::All environment variables passed validation.")
     return "\n".join(lines)
 
 
-def print_report(
-    report: AuditReport,
-    fmt: OutputFormat = OutputFormat.TEXT,
-    stream: TextIO = sys.stdout,
-) -> None:
-    """Render *report* in the requested format and write to *stream*."""
-    formatters = {
-        OutputFormat.TEXT: format_text,
-        OutputFormat.JSON: format_json,
-        OutputFormat.GITHUB: format_github,
-    }
-    output = formatters[fmt](report)
-    print(output, file=stream)
+def format_report(report: AuditReport, fmt: OutputFormat = OutputFormat.TEXT) -> str:
+    if fmt == OutputFormat.JSON:
+        return format_json(report)
+    if fmt == OutputFormat.GITHUB:
+        return format_github(report)
+    return format_text(report)
