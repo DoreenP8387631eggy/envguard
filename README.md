@@ -49,6 +49,12 @@ Or use the CLI directly:
 envguard validate --schema .env.schema --env .env
 ```
 
+To list all variables defined in your schema along with their rules:
+
+```bash
+envguard audit --schema .env.schema
+```
+
 ---
 
 ## Why envguard?
