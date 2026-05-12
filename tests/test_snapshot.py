@@ -36,6 +36,13 @@ def test_save_snapshot_creates_parent_dirs(tmp_path):
     assert Path(snap_path).exists()
 
 
+def test_load_snapshot_missing_file(tmp_path):
+    """Loading a non-existent snapshot should raise FileNotFoundError."""
+    snap_path = str(tmp_path / "nonexistent.json")
+    with pytest.raises(FileNotFoundError):
+        load_snapshot(snap_path)
+
+
 def test_compare_snapshots_introduced():
     old = {"passed": True, "issues": []}
     new = {"passed": False, "issues": [{"level": "error", "var": "SECRET", "message": "Missing"}]}
