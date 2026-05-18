@@ -36,6 +36,17 @@ def test_save_snapshot_creates_parent_dirs(tmp_path):
     assert Path(snap_path).exists()
 
 
+def test_save_snapshot_produces_valid_json(tmp_path):
+    """Saved snapshot file should be valid, parseable JSON."""
+    snap_path = str(tmp_path / "snap.json")
+    save_snapshot(_make_report([
+        AuditIssue(level="warning", var_name="LOG_LEVEL", message="Deprecated"),
+    ]), snap_path)
+    with open(snap_path) as f:
+        data = json.load(f)  # raises if not valid JSON
+    assert isinstance(data, dict)
+
+
 def test_load_snapshot_missing_file(tmp_path):
     """Loading a non-existent snapshot should raise FileNotFoundError."""
     snap_path = str(tmp_path / "nonexistent.json")
