@@ -65,6 +65,13 @@ def test_mask_value_partial_short_value() -> None:
     assert result == "***"
 
 
+def test_mask_value_partial_custom_placeholder() -> None:
+    """Partial mode should use the custom placeholder when provided."""
+    result = mask_value("abcdefgh", partial=True, placeholder="[HIDDEN]")
+    assert result.startswith("abcd")
+    assert "[HIDDEN]" in result
+
+
 # ---------------------------------------------------------------------------
 # mask_env
 # ---------------------------------------------------------------------------
@@ -102,3 +109,8 @@ def test_mask_env_partial_mode() -> None:
     env = {"API_KEY": "abcdefgh"}
     masked = mask_env(env, partial=True)
     assert masked["API_KEY"].startswith("abcd")
+
+
+def test_mask_env_empty_dict() -> None:
+    """mask_env should handle an empty environment without errors."""
+    assert mask_env({}) == {}
